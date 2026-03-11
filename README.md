@@ -97,6 +97,41 @@ The first `docker compose build` fetches packages from nuget.org through the cac
 
 In CI/CD pipelines, don't pass the build arg — the default `nuget.config` is used and ThinGet is bypassed entirely.
 
+## Usage Outside Docker
+
+If you want to use ThinGet for local `dotnet restore` without Docker builds, run the cache container and point your NuGet client at it.
+
+### 1. Start ThinGet
+
+```bash
+docker compose up -d nuget-cache
+```
+
+### 2. Add a local NuGet source
+
+```bash
+dotnet nuget add source http://localhost:5555/v3/index.json -n thinget
+```
+
+Or create/edit a `nuget.config` in your solution root:
+
+```xml
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="thinget" value="http://localhost:5555/v3/index.json" allowInsecureConnections="true" />
+  </packageSources>
+</configuration>
+```
+
+Then run `dotnet restore` as usual. Packages are fetched through ThinGet and cached for subsequent restores.
+
+To revert, remove the source:
+
+```bash
+dotnet nuget remove source thinget
+```
+
 ## Configuration
 
 | Variable | Default | Description |
