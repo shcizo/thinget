@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Proxy struct {
@@ -15,7 +16,7 @@ type Proxy struct {
 func NewProxy(upstream string) *Proxy {
 	return &Proxy{
 		upstream: strings.TrimRight(upstream, "/"),
-		client:   &http.Client{},
+		client:   &http.Client{Timeout: 30 * time.Second},
 	}
 }
 

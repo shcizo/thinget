@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -102,15 +104,15 @@ func (h *Handler) handleVersionIndex(w http.ResponseWriter, r *http.Request, id 
 }
 
 func (h *Handler) handlePackageDownload(w http.ResponseWriter, r *http.Request, id, version string) {
-	if h.cache.HasPackage(id, version) {
-		reader, err := h.cache.GetPackage(id, version)
-		if err != nil {
-			http.Error(w, "cache read error", http.StatusInternalServerError)
-			return
-		}
+	reader, err := h.cache.GetPackage(id, version)
+	if err == nil {
 		defer reader.Close()
 		w.Header().Set("Content-Type", "application/octet-stream")
 		io.Copy(w, reader)
+		return
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		http.Error(w, "cache read error", http.StatusInternalServerError)
 		return
 	}
 
@@ -131,7 +133,7 @@ func (h *Handler) handlePackageDownload(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	reader, err := h.cache.GetPackage(id, version)
+	reader, err = h.cache.GetPackage(id, version)
 	if err != nil {
 		http.Error(w, "cache read error", http.StatusInternalServerError)
 		return
