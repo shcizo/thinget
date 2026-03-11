@@ -1,0 +1,17 @@
+services:
+  nuget-cache:
+    build: .
+    ports:
+      - "5555:5555"
+    volumes:
+      - nuget-cache:/cache
+    environment:
+      - THINGET_UPSTREAM=https://api.nuget.org
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5555/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  nuget-cache:
