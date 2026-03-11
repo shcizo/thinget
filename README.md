@@ -19,6 +19,12 @@ volumes:
   nuget-cache:
 ```
 
+Start the cache before building:
+
+```bash
+docker compose up nuget-cache -d
+```
+
 ## Usage with .NET Docker Builds
 
 ### 1. Create `nuget.docker.config` in your project
@@ -27,8 +33,29 @@ volumes:
 <configuration>
   <packageSources>
     <clear />
-    <add key="thinget" value="http://nuget-cache:5555/v3/index.json" />
+    <add key="thinget" value="http://host.docker.internal:5555/v3/index.json" allowInsecureConnections="true" />
   </packageSources>
+  <packageSourceMapping>
+    <packageSource key="thinget">
+      <package pattern="*" />
+    </packageSource>
+  </packageSourceMapping>
+</configuration>
+```
+
+You should also have a default `nuget.config` for non-Docker builds (CI, local `dotnet restore`, etc.):
+
+```xml
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+  <packageSourceMapping>
+    <packageSource key="nuget.org">
+      <package pattern="*" />
+    </packageSource>
+  </packageSourceMapping>
 </configuration>
 ```
 
@@ -51,6 +78,8 @@ RUN dotnet publish -c Release -o /app
 services:
   nuget-cache:
     image: ghcr.io/shcizo/thinget:latest
+    ports:
+      - "5555:5555"
     volumes:
       - nuget-cache:/cache
 
@@ -59,8 +88,6 @@ services:
       context: .
       args:
         NUGET_CONFIG: nuget.docker.config
-    depends_on:
-      - nuget-cache
 
 volumes:
   nuget-cache:
@@ -86,3 +113,12 @@ In CI/CD pipelines, don't pass the build arg — the default `nuget.config` is u
 - `GET /health` — Health check
 
 Packages are immutable in NuGet, so cached files never need invalidation. The cache persists in a Docker volume. Clear it with `docker volume rm` if needed.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| `NuGet requires HTTPS sources` | NuGet blocks HTTP by default | Add `allowInsecureConnections="true"` on the source in `nuget.docker.config` |
+| `NU1507: There are 2 package sources` | Central Package Management requires source mapping when multiple sources exist | Add `<packageSourceMapping>` with `<package pattern="*" />` to your NuGet configs |
+| `Unable to load the service index` | ThinGet isn't running | Run `docker compose up nuget-cache -d` before building |
+| Build can't resolve `nuget-cache` hostname | Docker build containers don't have access to the compose network | Use `host.docker.internal:5555` instead of `nuget-cache:5555` in `nuget.docker.config` |
