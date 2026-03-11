@@ -74,7 +74,19 @@ func (h *Handler) handleServiceIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleFlat(w http.ResponseWriter, r *http.Request) {
-	// Routing implemented in Task 6
+	path := strings.TrimPrefix(r.URL.Path, "/v3/flat/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+
+	if len(parts) == 2 && parts[1] == "index.json" {
+		h.handleVersionIndex(w, r, parts[0])
+		return
+	}
+
+	if len(parts) == 3 && strings.HasSuffix(parts[2], ".nupkg") {
+		h.handlePackageDownload(w, r, parts[0], parts[1])
+		return
+	}
+
 	http.NotFound(w, r)
 }
 
