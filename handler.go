@@ -68,6 +68,11 @@ func (h *Handler) handleServiceIndex(w http.ResponseWriter, r *http.Request) {
 				"@type":   "RegistrationsBaseUrl/3.6.0",
 				"comment": "Package metadata (upstream passthrough)",
 			},
+			{
+				"@id":     upstream + "/v3/vulnerabilities/index.json",
+				"@type":   "VulnerabilityInfo/6.7.0",
+				"comment": "Package vulnerability data (upstream passthrough)",
+			},
 		},
 	}
 
